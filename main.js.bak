@@ -1,0 +1,46 @@
+// import './style.css'
+// import javascriptLogo from './javascript.svg'
+// import { setupCounter } from './counter.js'
+import Mustache from 'mustache';
+
+// setupCounter(document.querySelector('#counter'))
+
+const routes = await import.meta.glob('./routes/**/*.html', { as: 'raw' })
+
+let proxy;
+
+const render = (route, data) => {
+  let output = Mustache.render(route, data);
+  document.querySelector('#app').innerHTML = output;
+  document.getElementById("title").addEventListener('input', (event) => {
+    let value = event.target.value;
+    console.log(value);
+    proxy["title"] = value;
+  })
+}
+
+function assignProxy(route, data) {
+  console.log(data);
+  // Update DOM element bound when controller property is set
+  let proxyHandler = {
+    set: (target, prop, value, receiver) => {
+      target[prop] = value
+      console.log(prop);
+      render(route, data)
+      return target;
+    }
+  }
+  proxy = new Proxy(data, proxyHandler);
+
+  // Fill proxy with model data
+  // and return proxy, not the data!
+  return Object.assign(proxy, data);
+}
+
+routes['./routes/index.html']().then(route => {
+  let data = {
+    title: "Index"
+  }
+  assignProxy(route, data)
+  render(route, data)
+})
